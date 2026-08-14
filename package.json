@@ -1,0 +1,8 @@
+{
+  "name": "project",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "calibrate": "node packages/server/dist/cli.js calibrate"
+  }
+}

@@ -202,7 +202,8 @@ object InitialSeedData {
             status = "PRICE_CUT",
             imageUrl = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
             notes = "Edificio cielo-terra dismesso con potenziale cambio d'uso in residenziale/micro-living.",
-            isBookmarked = true
+            isBookmarked = true,
+            dealStage = "UNDER_CONTRACT"
         ),
         PropertyDeal(
             id = 102,
@@ -221,7 +222,8 @@ object InitialSeedData {
             status = "LIVE",
             imageUrl = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80",
             notes = "Piattaforma remarketing. Ottimo per operazione di frazionamento logistico o trasformazione last-mile.",
-            isBookmarked = true
+            isBookmarked = true,
+            dealStage = "CLOSING"
         ),
         PropertyDeal(
             id = 103,
@@ -240,7 +242,8 @@ object InitialSeedData {
             status = "LIVE",
             imageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
             notes = "Dismissione portafoglio corporate. Pronta masterplan per parco tecnologico o residenze universitarie.",
-            isBookmarked = false
+            isBookmarked = true,
+            dealStage = "PROSPECTING"
         ),
         PropertyDeal(
             id = 104,
@@ -259,7 +262,8 @@ object InitialSeedData {
             status = "PRICE_CUT",
             imageUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80",
             notes = "Patrimonio BNL BNP Paribas. Posizione angolare ad altissimo passaggio pedonale.",
-            isBookmarked = false
+            isBookmarked = true,
+            dealStage = "CLOSED"
         ),
         PropertyDeal(
             id = 105,
@@ -387,6 +391,161 @@ object InitialSeedData {
 
         PriceHistory(dealId = 105, price = 650000.0, dateRecorded = "01/03/2026", eventLabel = "Stima Perizia Leasing"),
         PriceHistory(dealId = 105, price = 490000.0, dateRecorded = "05/07/2026", eventLabel = "Listino Remarketing BPER")
+    )
+
+    val initialDistressedProperties = listOf(
+        DistressedProperty(
+            id = 1,
+            address = "Via Garibaldi 10, Milano (MI)",
+            price = 280000.0,
+            distressLevel = "Foreclosure",
+            category = "Residential",
+            latitude = 45.4642,
+            longitude = 9.1900,
+            imageUrl = "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80",
+            notes = "Procedura esecutiva NPL n. 412/2025 Tribunale di Milano. Immobile ad uso residenziale 120 mq."
+        ),
+        DistressedProperty(
+            id = 2,
+            address = "Corso Buenos Aires 45, Milano (MI)",
+            price = 450000.0,
+            distressLevel = "Auction",
+            category = "Commercial",
+            latitude = 45.4800,
+            longitude = 9.2100,
+            imageUrl = "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=800&q=80",
+            notes = "Asta giudiziaria con offerta minima ribassata del 35%. Negozio monovetrina."
+        ),
+        DistressedProperty(
+            id = 3,
+            address = "Via Nazionale 120, Roma (RM)",
+            price = 520000.0,
+            distressLevel = "Pre-Foreclosure",
+            category = "Commercial",
+            latitude = 41.9028,
+            longitude = 12.4964,
+            imageUrl = "https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=800&q=80",
+            notes = "Sofferenza bancaria prima dell'asta. Trattativa saldo e stralcio possibile."
+        ),
+        DistressedProperty(
+            id = 4,
+            address = "Via Po 18, Torino (TO)",
+            price = 210000.0,
+            distressLevel = "Tax Lien",
+            category = "Industrial",
+            latitude = 45.0703,
+            longitude = 7.6869,
+            imageUrl = "https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=800&q=80",
+            notes = "Cartella esattoriale e gravame fiscale. Capannone ed ex laboratorio artigianale."
+        ),
+        DistressedProperty(
+            id = 5,
+            address = "Via Indipendenza 32, Bologna (BO)",
+            price = 340000.0,
+            distressLevel = "Foreclosure",
+            category = "Residential",
+            latitude = 44.4949,
+            longitude = 11.3426,
+            imageUrl = "https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=800&q=80",
+            notes = "Pignoramento immobiliare. Appartamento piano alto con ascensore."
+        ),
+        DistressedProperty(
+            id = 6,
+            address = "Via Cavour 14, Firenze (FI)",
+            price = 390000.0,
+            distressLevel = "Bank REO",
+            category = "Residential",
+            latitude = 43.7732,
+            longitude = 11.2558,
+            imageUrl = "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+            notes = "Rientro in possesso banca (BPER Leasing). Bilocale storico centro."
+        ),
+        DistressedProperty(
+            id = 7,
+            address = "Via Toledo 210, Napoli (NA)",
+            price = 195000.0,
+            distressLevel = "Auction",
+            category = "Commercial",
+            latitude = 40.8398,
+            longitude = 14.2488,
+            imageUrl = "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80",
+            notes = "Asta giudiziaria Tribunale di Napoli. Sconto -48% per rapida liquidazione."
+        ),
+        DistressedProperty(
+            id = 8,
+            address = "Corso Cavour 88, Verona (VR)",
+            price = 265000.0,
+            distressLevel = "Short Sale",
+            category = "Residential",
+            latitude = 45.4384,
+            longitude = 10.9916,
+            imageUrl = "https://images.unsplash.com/photo-1570129477492-45c003edd2be?auto=format&fit=crop&w=800&q=80",
+            notes = "Procedura stragiudiziale saldo e stralcio concordata con creditore ipotecario."
+        ),
+        DistressedProperty(
+            id = 9,
+            address = "Cannaregio 1420, Venezia (VE)",
+            price = 480000.0,
+            distressLevel = "Foreclosure",
+            category = "Industrial",
+            latitude = 45.4432,
+            longitude = 12.3280,
+            imageUrl = "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80",
+            notes = "Esecuzione immobiliare n. 88/2025. Deposito e magazzino con porta d'acqua."
+        ),
+        DistressedProperty(
+            id = 10,
+            address = "Via Bramante 12, Milano (MI)",
+            price = 310000.0,
+            distressLevel = "Pre-Foreclosure",
+            category = "Residential",
+            latitude = 45.4815,
+            longitude = 9.1795,
+            imageUrl = "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?auto=format&fit=crop&w=800&q=80",
+            notes = "Contatto diretto con esecutato prima dell'avviso d'asta. Zona Chinatown / Sempione."
+        )
+    )
+
+    val initialProperties = listOf(
+        Property(
+            id = 1,
+            title = "Trilocale Luminoso Porta Romana",
+            address = "Via Crema 15, Milano",
+            price = 380000.0,
+            surfaceSqm = 95,
+            propertyType = "Appartamento",
+            distressStatus = "Pre-Asta",
+            strategyTags = "Frazionamento, Ristrutturazione",
+            notes = "Ottimo potenziale per frazionamento in due monolocali ad alta redditività.",
+            latitude = 45.4520,
+            longitude = 9.2010
+        ),
+        Property(
+            id = 2,
+            title = "Palazzina Cielo-Terra da Riconvertire",
+            address = "Via Garibaldi 44, Torino",
+            price = 650000.0,
+            surfaceSqm = 520,
+            propertyType = "Cielo-Terra",
+            distressStatus = "NPL",
+            strategyTags = "Riconversione, Trading",
+            notes = "Ex sede uffici, convertibile in residenziale con box auto.",
+            latitude = 45.0715,
+            longitude = 7.6780
+        ),
+        Property(
+            id = 3,
+            title = "Attico Panoramico Quartiere Prati",
+            address = "Via Cola di Rienzo 88, Roma",
+            price = 720000.0,
+            surfaceSqm = 140,
+            propertyType = "Attico",
+            distressStatus = "Saldo e Stralcio",
+            strategyTags = "Messa a Rendita, Luxury",
+            notes = "Trattativa riservata con istituto di credito. Terrazzo a livello 50mq.",
+            latitude = 41.9080,
+            longitude = 12.4650
+        )
     )
 }
 

@@ -9,7 +9,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Analytics
 import androidx.compose.material.icons.filled.PieChart
-import androidx.compose.material.icons.filled.TrendingUp
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -19,23 +19,36 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
+import com.example.data.Property
 import com.example.data.PropertyDeal
 import com.example.ui.theme.*
+import com.example.util.CsvExporter
 import java.text.NumberFormat
 import java.util.Locale
 
+import androidx.compose.material.icons.filled.AutoAwesome
+
 @Composable
-fun AnalyticsScreen(deals: List<PropertyDeal>) {
+fun AnalyticsScreen(
+    deals: List<PropertyDeal>,
+    properties: List<Property> = emptyList(),
+    onOpenMarketTrendDrawer: (String) -> Unit = {}
+) {
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.ITALY).apply {
         maximumFractionDigits = 0
     }
 
-    val totalAskingPrice = deals.sumOf { it.askingPrice }
-    val totalMarketValue = deals.sumOf { it.estimatedMarketValue }
+    val context = LocalContext.current
+
+    val totalAskingPrice = deals.sumOf { it.askingPrice } + properties.sumOf { it.price }
+    val totalMarketValue = deals.sumOf { it.estimatedMarketValue } + properties.sumOf { it.estimatedMarketValue }
     val totalPotentialEquity = totalMarketValue - totalAskingPrice
 
     val sourceGroup = deals.groupBy { it.sourceName }
-    val typeGroup = deals.groupBy { it.propertyType }
+    val typeGroup = (deals.map { it.propertyType } + properties.map { it.propertyType }).groupBy { it }
 
     Column(
         modifier = Modifier
@@ -45,46 +58,126 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Title
+        // Title Header with Export CSV Button
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(PurpleIndigo, RoundedCornerShape(10.dp)),
-                contentAlignment = Alignment.Center
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Icon(
-                    imageVector = Icons.Default.Analytics,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(24.dp)
-                )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(PurpleIndigo, RoundedCornerShape(10.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Analytics,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = "Analytics Radar & Trend Prezzi",
+                        color = TextPrimaryDark,
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = "Statistiche e valore portafoglio",
+                        color = TextSecondaryDark,
+                        fontSize = 11.sp
+                    )
+                }
             }
-            Column {
-                Text(
-                    text = "Analytics Radar",
-                    color = TextPrimaryDark,
-                    fontSize = 20.sp,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Statistiche e Distribuzione Valore Portafoglio",
-                    color = TextSecondaryDark,
-                    fontSize = 12.sp
-                )
+
+            OutlinedButton(
+                onClick = {
+                    if (properties.isNotEmpty()) {
+                        CsvExporter.exportPropertiesToCsv(context, properties)
+                    } else if (deals.isNotEmpty()) {
+                        CsvExporter.exportDealsToCsv(context, deals)
+                    } else {
+                        CsvExporter.exportPropertiesToCsv(context, emptyList())
+                    }
+                },
+                shape = RoundedCornerShape(10.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = CyanAccent),
+                contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                modifier = Modifier.testTag("analytics_export_csv_button")
+            ) {
+                Icon(Icons.Default.Download, contentDescription = "Esporta CSV", modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Esporta CSV", fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
         }
+
+        // Gemini Market Trend AI Card
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .border(1.dp, CyanAccent.copy(alpha = 0.5f), RoundedCornerShape(20.dp)),
+            colors = CardDefaults.cardColors(containerColor = BentoPurpleHeader)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(CyanAccent, RoundedCornerShape(10.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color.Black, modifier = Modifier.size(20.dp))
+                    }
+                    Column {
+                        Text("Report Trend Regionale (Gemini AI)", color = TextPrimaryDark, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+                        Text("Analisi prezzi al mq e previsione domanda per la tua regione", color = TextSecondaryDark, fontSize = 11.sp)
+                    }
+                }
+
+                Button(
+                    onClick = { onOpenMarketTrendDrawer("Milano") },
+                    colors = ButtonDefaults.buttonColors(containerColor = CyanAccent),
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier.testTag("open_analytics_market_drawer_button")
+                ) {
+                    Text("Genera AI", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+        }
+
+        // Section 1: Property Price Trend Chart Summary
+        PropertyTrendSummaryScreen(
+            properties = properties,
+            deals = deals,
+            modifier = Modifier.padding(0.dp)
+        )
 
         // Hero Card: Equity Surplus / Savings Potential
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, CyanAccent.copy(alpha = 0.5f), RoundedCornerShape(16.dp)),
-            colors = CardDefaults.cardColors(containerColor = SurfaceCardDark)
+                .clip(RoundedCornerShape(28.dp))
+                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(28.dp)),
+            colors = CardDefaults.cardColors(containerColor = BentoPurpleContainer.copy(alpha = 0.4f))
         ) {
             Column(
                 modifier = Modifier
@@ -94,9 +187,9 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
             ) {
                 Text(
                     text = "Delta Valore Mercato vs Prezzo Iniziale",
-                    color = TextSecondaryDark,
+                    color = BentoPurpleOnContainer,
                     fontSize = 12.sp,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold
                 )
 
                 Text(
@@ -111,11 +204,11 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Column {
-                        Text("Prezzo Asta / Richiesta", color = TextMutedDark, fontSize = 11.sp)
+                        Text("Prezzo Asta / Richiesta", color = TextSecondaryDark, fontSize = 11.sp)
                         Text(currencyFormat.format(totalAskingPrice), color = TextPrimaryDark, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                     Column(horizontalAlignment = Alignment.End) {
-                        Text("Stima Perizia Totale", color = TextMutedDark, fontSize = 11.sp)
+                        Text("Stima Perizia Totale", color = TextSecondaryDark, fontSize = 11.sp)
                         Text(currencyFormat.format(totalMarketValue), color = CyanAccent, fontSize = 14.sp, fontWeight = FontWeight.Bold)
                     }
                 }
@@ -126,14 +219,14 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(28.dp))
+                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(28.dp)),
             colors = CardDefaults.cardColors(containerColor = SurfaceCardDark)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
@@ -165,7 +258,7 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
                             color = CyanAccent,
-                            trackColor = DarkSlateBg
+                            trackColor = BentoPurpleHeader
                         )
                     }
                 }
@@ -176,21 +269,21 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
         Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(16.dp)),
+                .clip(RoundedCornerShape(28.dp))
+                .border(1.dp, SurfaceCardBorder, RoundedCornerShape(28.dp)),
             colors = CardDefaults.cardColors(containerColor = SurfaceCardDark)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(18.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Icon(Icons.Default.TrendingUp, contentDescription = null, tint = AmberGold)
+                    Icon(Icons.AutoMirrored.Filled.TrendingUp, contentDescription = null, tint = AmberGold)
                     Text("Tipologia Asset Immobiliari", color = TextPrimaryDark, fontSize = 15.sp, fontWeight = FontWeight.Bold)
                 }
 
@@ -215,7 +308,7 @@ fun AnalyticsScreen(deals: List<PropertyDeal>) {
                                 .height(8.dp)
                                 .clip(RoundedCornerShape(4.dp)),
                             color = AmberGold,
-                            trackColor = DarkSlateBg
+                            trackColor = BentoPurpleHeader
                         )
                     }
                 }

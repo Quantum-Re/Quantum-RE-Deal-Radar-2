@@ -8,13 +8,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Bookmark
 import androidx.compose.material.icons.filled.BookmarkBorder
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Gavel
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.SquareFoot
-import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.automirrored.filled.TrendingDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,14 +40,24 @@ import com.example.ui.theme.*
 import java.text.NumberFormat
 import java.util.Locale
 
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
+import com.example.util.AuctionDateStatus
+import com.example.util.AuctionDateUtils
+
+import androidx.compose.material.icons.filled.Compare
+
 @Composable
 fun DealCard(
     deal: PropertyDeal,
     onCardClick: () -> Unit,
     onBookmarkToggle: () -> Unit,
     onCalculateClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isSelectedForCompare: Boolean = false,
+    onCompareToggle: (() -> Unit)? = null
 ) {
+    val context = LocalContext.current
     val currencyFormat = NumberFormat.getCurrencyInstance(Locale.ITALY).apply {
         maximumFractionDigits = 0
     }
@@ -52,11 +67,18 @@ fun DealCard(
         label = "bookmarkTint"
     )
 
+    val strings = com.example.util.LocalAppStrings.current
+    val auctionStatus = AuctionDateUtils.getStatus(deal.auctionDate)
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(24.dp))
-            .border(1.dp, SurfaceCardBorder, RoundedCornerShape(24.dp))
+            .border(
+                1.dp,
+                if (isSelectedForCompare) CyanAccent else SurfaceCardBorder,
+                RoundedCornerShape(24.dp)
+            )
             .clickable { onCardClick() }
             .testTag("deal_card_${deal.id}"),
         colors = CardDefaults.cardColors(containerColor = SurfaceCardDark)
@@ -87,48 +109,141 @@ fun DealCard(
                         )
                 )
 
-                // Top Right: Bookmark Button
-                IconButton(
-                    onClick = onBookmarkToggle,
+                // Top Right: Compare & Bookmark Buttons Row
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(8.dp)
-                        .background(Color.Black.copy(alpha = 0.5f), CircleShape)
-                        .size(36.dp)
-                        .testTag("bookmark_button_${deal.id}")
+                        .padding(8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = if (deal.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
-                        contentDescription = "Bookmark Deal",
-                        tint = bookmarkTint,
-                        modifier = Modifier.size(20.dp)
-                    )
+                    if (onCompareToggle != null) {
+                        IconButton(
+                            onClick = onCompareToggle,
+                            modifier = Modifier
+                                .background(if (isSelectedForCompare) CyanAccent else Color.Black.copy(alpha = 0.5f), CircleShape)
+                                .size(36.dp)
+                                .testTag("compare_button_${deal.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Compare,
+                                contentDescription = "Confronta Immobile",
+                                tint = if (isSelectedForCompare) Color.Black else Color.White,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    IconButton(
+                        onClick = onBookmarkToggle,
+                        modifier = Modifier
+                            .background(Color.Black.copy(alpha = 0.5f), CircleShape)
+                            .size(36.dp)
+                            .testTag("bookmark_button_${deal.id}")
+                    ) {
+                        Icon(
+                            imageVector = if (deal.isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
+                            contentDescription = "Bookmark Deal",
+                            tint = bookmarkTint,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
                 }
 
-                // Top Left: Source Provider Badge
-                Surface(
+                // Top Left: Source Provider & AI Score Badge
+                Row(
                     modifier = Modifier
                         .align(Alignment.TopStart)
                         .padding(12.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    color = Color.Black.copy(alpha = 0.7f)
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Black.copy(alpha = 0.75f)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(6.dp)
-                                .background(CyanAccent, CircleShape)
-                        )
-                        Text(
-                            text = deal.sourceName,
-                            color = Color.White,
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(6.dp)
+                                    .background(CyanAccent, CircleShape)
+                            )
+                            Text(
+                                text = deal.sourceName,
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    // Quantum AI Score Badge
+                    val aiScore = String.format("%.1f", 7.5 + (deal.discountPercent * 0.06).coerceAtMost(2.3))
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = PurpleIndigo.copy(alpha = 0.9f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Text(
+                                text = "AI $aiScore/10",
+                                color = Color.White,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+
+                    if (deal.isBookmarked) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = AmberGold
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = Color.Black,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Text(
+                                    text = if (strings.isItalian) "In Osservazione" else "Bookmarked",
+                                    color = Color.Black,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    if (deal.priceAlertThreshold != null) {
+                        Surface(
+                            shape = RoundedCornerShape(8.dp),
+                            color = CyanAccent
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
+                                Text(
+                                    text = "🔔 ≤ ${currencyFormat.format(deal.priceAlertThreshold)}",
+                                    color = Color.Black,
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -150,7 +265,7 @@ fun DealCard(
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.TrendingDown,
+                                imageVector = Icons.AutoMirrored.Filled.TrendingDown,
                                 contentDescription = null,
                                 tint = Color.Black,
                                 modifier = Modifier.size(14.dp)
@@ -232,8 +347,9 @@ fun DealCard(
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(14.dp)
                         )
+                        val pricePerSqm = if (deal.surfaceSqm > 0) (deal.askingPrice / deal.surfaceSqm).toInt() else 0
                         Text(
-                            text = "${deal.surfaceSqm} m²",
+                            text = "${deal.surfaceSqm} m² (€${pricePerSqm}/m²)",
                             color = TextSecondaryDark,
                             fontSize = 13.sp
                         )
@@ -281,30 +397,86 @@ fun DealCard(
                         )
                     }
 
-                    // Action: Calculate ROI
-                    IconButton(
-                        onClick = onCalculateClick,
-                        modifier = Modifier
-                            .background(Color(0xFF0369A1).copy(alpha = 0.3f), RoundedCornerShape(10.dp))
-                            .border(1.dp, CyanAccent.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
-                            .size(38.dp)
-                            .testTag("calc_roi_button_${deal.id}")
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Calculate,
-                            contentDescription = "Calcola ROI",
-                            tint = CyanAccent,
-                            modifier = Modifier.size(20.dp)
-                        )
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        IconButton(
+                            onClick = {
+                                try {
+                                    val url = if (deal.sourceUrl.startsWith("http://") || deal.sourceUrl.startsWith("https://")) {
+                                        deal.sourceUrl
+                                    } else {
+                                        "https://${deal.sourceUrl}"
+                                    }
+                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                                    context.startActivity(intent)
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Impossibile aprire il link della fonte", Toast.LENGTH_SHORT).show()
+                                }
+                            },
+                            modifier = Modifier
+                                .background(Color(0xFF0F766E).copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                                .border(1.dp, EmeraldGreen.copy(alpha = 0.6f), RoundedCornerShape(10.dp))
+                                .size(38.dp)
+                                .testTag("open_source_link_button_${deal.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.OpenInNew,
+                                contentDescription = "Contatta / Apri Fonte Origine",
+                                tint = EmeraldGreen,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+
+                        IconButton(
+                            onClick = onCalculateClick,
+                            modifier = Modifier
+                                .background(Color(0xFF0369A1).copy(alpha = 0.3f), RoundedCornerShape(10.dp))
+                                .border(1.dp, CyanAccent.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                                .size(38.dp)
+                                .testTag("calc_roi_button_${deal.id}")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Calculate,
+                                contentDescription = "Calcola ROI",
+                                tint = CyanAccent,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
 
                 // Auction Date notice if present
                 if (!deal.auctionDate.isNull_or_blank_safe()) {
                     Spacer(modifier = Modifier.height(10.dp))
+                    val notice = when (auctionStatus) {
+                        is AuctionDateStatus.Expired -> NoticeInfo(
+                            RoseRed.copy(alpha = 0.25f),
+                            RoseRed,
+                            Icons.Default.Warning,
+                            if (strings.isItalian) "⛔ ASTA SCADUTA (${auctionStatus.dateFormatted}) - Non Partecipabile" else "⛔ AUCTION EXPIRED (${auctionStatus.dateFormatted}) - Closed"
+                        )
+                        is AuctionDateStatus.Today -> NoticeInfo(
+                            RoseRed,
+                            Color.White,
+                            Icons.Default.Gavel,
+                            if (strings.isItalian) "🚨 ASTA IN SCADENZA OGGI (${auctionStatus.dateFormatted})" else "🚨 AUCTION ENDS TODAY (${auctionStatus.dateFormatted})"
+                        )
+                        is AuctionDateStatus.Upcoming -> NoticeInfo(
+                            Color(0xFF1E1B4B),
+                            Color(0xFFC7D2FE),
+                            Icons.Default.Gavel,
+                            if (strings.isItalian) "⏳ Termine Offerta: ${auctionStatus.dateFormatted} (${auctionStatus.daysLeft} gg rimasti)" else "⏳ Bidding Deadline: ${auctionStatus.dateFormatted} (${auctionStatus.daysLeft} days left)"
+                        )
+                        else -> NoticeInfo(
+                            Color(0xFF1E1B4B),
+                            Color(0xFFC7D2FE),
+                            Icons.Default.Gavel,
+                            if (strings.isItalian) "Termine Offerta: ${deal.auctionDate}" else "Bidding Deadline: ${deal.auctionDate}"
+                        )
+                    }
+
                     Surface(
                         shape = RoundedCornerShape(6.dp),
-                        color = Color(0xFF1E1B4B)
+                        color = notice.bgColor
                     ) {
                         Row(
                             modifier = Modifier
@@ -314,14 +486,14 @@ fun DealCard(
                             horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Gavel,
+                                imageVector = notice.icon,
                                 contentDescription = null,
-                                tint = PurpleIndigo,
+                                tint = notice.textColor,
                                 modifier = Modifier.size(14.dp)
                             )
                             Text(
-                                text = "Termine Presentazione Offerta: ${deal.auctionDate}",
-                                color = Color(0xFFC7D2FE),
+                                text = notice.label,
+                                color = notice.textColor,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -332,6 +504,13 @@ fun DealCard(
         }
     }
 }
+
+private data class NoticeInfo(
+    val bgColor: Color,
+    val textColor: Color,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+    val label: String
+)
 
 private fun String?.isNull_or_blank_safe(): Boolean {
     return this == null || this.trim().isEmpty()

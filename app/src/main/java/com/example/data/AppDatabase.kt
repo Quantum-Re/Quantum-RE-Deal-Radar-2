@@ -6,14 +6,19 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [PropertyDeal::class, ScraperSource::class, PriceHistory::class],
-    version = 2,
+    entities = [PropertyDeal::class, Property::class, ScraperSource::class, PriceHistory::class, InvestorProfile::class, MapTileCache::class, MapOfflineRegion::class, DistressedProperty::class, RecentSearchQuery::class],
+    version = 19,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun propertyDealDao(): PropertyDealDao
+    abstract fun propertyDao(): PropertyDao
     abstract fun scraperSourceDao(): ScraperSourceDao
     abstract fun priceHistoryDao(): PriceHistoryDao
+    abstract fun investorProfileDao(): InvestorProfileDao
+    abstract fun mapTileCacheDao(): MapTileCacheDao
+    abstract fun distressedPropertyDao(): DistressedPropertyDao
+    abstract fun recentSearchDao(): RecentSearchDao
 
     companion object {
         @Volatile
@@ -26,11 +31,20 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "quantum_deal_radar.db"
                 )
-                .fallbackToDestructiveMigration()
+                .fallbackToDestructiveMigration(true)
                 .build()
                 INSTANCE = instance
                 instance
             }
         }
+
+        suspend fun seedDatabaseIfEmpty(context: Context): SeedResult {
+            val db = getDatabase(context)
+            return DatabaseSeeder.seedDatabaseIfEmpty(db)
+        }
+    }
+
+    suspend fun seedIfEmpty(): SeedResult {
+        return DatabaseSeeder.seedDatabaseIfEmpty(this)
     }
 }

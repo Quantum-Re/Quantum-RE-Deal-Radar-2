@@ -25,6 +25,8 @@ import com.example.data.ScraperTestResult
 import com.example.ui.UiState
 import com.example.ui.theme.*
 
+import com.example.data.PropertyDeal
+
 @Composable
 fun ParserSandboxScreen(
     uiState: UiState,
@@ -32,7 +34,10 @@ fun ParserSandboxScreen(
     onSourceSelectForTest: (ScraperSource) -> Unit,
     onRunTestClick: (ScraperSource, String, String) -> Unit,
     onUpdateStatusClick: (String, String) -> Unit,
-    onEditRulesClick: (ScraperSource) -> Unit
+    onEditRulesClick: (ScraperSource) -> Unit,
+    onCalibrateClick: () -> Unit = {},
+    onImportDealsClick: (List<PropertyDeal>) -> Unit = {},
+    onExecuteBatchScrapeClick: () -> Unit = {}
 ) {
     var selectedSource by remember { mutableStateOf<ScraperSource?>(sources.firstOrNull()) }
     var sampleHtmlPayload by remember {
@@ -105,12 +110,44 @@ fun ParserSandboxScreen(
         ) {
             // Section 1: Active Sources Overview Grid/List
             item {
-                Text(
-                    text = "Rete Fonti Scraper & Stato Robots.txt",
-                    color = CyanAccent,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Rete Fonti Scraper & Stato Robots.txt",
+                        color = CyanAccent,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onExecuteBatchScrapeClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen, contentColor = Color.Black),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("batch_scrape_button")
+                        ) {
+                            Icon(Icons.Default.PlayCircle, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Batch Scrape Live", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+
+                        Button(
+                            onClick = onCalibrateClick,
+                            colors = ButtonDefaults.buttonColors(containerColor = BentoPurpleHeader, contentColor = BentoPurpleOnContainer),
+                            shape = RoundedCornerShape(12.dp),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.testTag("calibrate_sources_button")
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Calibra Fonti", fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
             }
 
             items(sources, key = { it.id }) { source ->
@@ -420,6 +457,26 @@ fun ParserSandboxScreen(
                                                     fontSize = 12.sp,
                                                     fontFamily = FontFamily.Monospace
                                                 )
+
+                                                if (res.extractedDeals.isNotEmpty()) {
+                                                    Spacer(modifier = Modifier.height(8.dp))
+                                                    Button(
+                                                        onClick = { onImportDealsClick(res.extractedDeals) },
+                                                        colors = ButtonDefaults.buttonColors(containerColor = EmeraldGreen, contentColor = Color.Black),
+                                                        shape = RoundedCornerShape(12.dp),
+                                                        modifier = Modifier
+                                                            .fillMaxWidth()
+                                                            .testTag("import_scraped_deals_button")
+                                                    ) {
+                                                        Icon(Icons.Default.Download, contentDescription = null, modifier = Modifier.size(16.dp))
+                                                        Spacer(modifier = Modifier.width(6.dp))
+                                                        Text(
+                                                            "Importa ${res.extractedDeals.size} Immobili Estratti nel Radar Feed",
+                                                            fontWeight = FontWeight.Bold,
+                                                            fontSize = 12.sp
+                                                        )
+                                                    }
+                                                }
                                             }
                                         }
                                     }
