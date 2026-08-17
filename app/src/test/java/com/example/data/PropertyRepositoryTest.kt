@@ -43,6 +43,33 @@ class FakePropertyDao(
         }
     }
 
+    override fun getPropertiesByPipelineStatusRaw(pipelineStatus: String): Flow<List<Property>> {
+        return _propertiesFlow.map { list ->
+            list.filter { it.pipelineStatus.equals(pipelineStatus, ignoreCase = true) }
+        }
+    }
+
+    override suspend fun updatePipelineStatusRaw(id: Long, newStatus: String) {
+        val currentList = _propertiesFlow.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == id }
+        if (index != -1) {
+            currentList[index] = currentList[index].copy(pipelineStatus = newStatus)
+            _propertiesFlow.value = currentList
+        }
+    }
+
+    override suspend fun updateRenovationProgressRaw(id: Long, progress: Int, actualCost: Double) {
+        val currentList = _propertiesFlow.value.toMutableList()
+        val index = currentList.indexOfFirst { it.id == id }
+        if (index != -1) {
+            currentList[index] = currentList[index].copy(
+                renovationProgressPercent = progress,
+                actualRenovationCost = actualCost
+            )
+            _propertiesFlow.value = currentList
+        }
+    }
+
     override suspend fun insertPropertyRaw(property: Property): Long {
         val currentList = _propertiesFlow.value.toMutableList()
         val assignedId = if (property.id == 0L) (_propertiesFlow.value.maxOfOrNull { it.id } ?: 0L) + 1L else property.id
@@ -77,6 +104,28 @@ class FakePropertyDao(
         val currentList = _propertiesFlow.value.toMutableList()
         currentList.removeAll { it.id == property.id }
         _propertiesFlow.value = currentList
+    }
+
+    override suspend fun deletePropertiesByIdsRaw(ids: List<Long>): Int {
+        val currentList = _propertiesFlow.value.toMutableList()
+        val before = currentList.size
+        currentList.removeAll { it.id in ids }
+        _propertiesFlow.value = currentList
+        return before - currentList.size
+    }
+
+    override suspend fun updatePipelineStatusForMultipleRaw(ids: List<Long>, newStatus: String): Int {
+        val currentList = _propertiesFlow.value.toMutableList()
+        var updated = 0
+        ids.forEach { id ->
+            val index = currentList.indexOfFirst { it.id == id }
+            if (index != -1) {
+                currentList[index] = currentList[index].copy(pipelineStatus = newStatus)
+                updated++
+            }
+        }
+        _propertiesFlow.value = currentList
+        return updated
     }
 
     override suspend fun clearAllRaw() {
@@ -314,5 +363,41 @@ class PropertyRepositoryTest {
         assertEquals(1, remaining.size)
         assertFalse(remaining.any { it.id == 101L })
         job.cancel()
+    }
+
+    @Test
+    fun `ViewModel updatePropertyPipelineStatus updates status and recomputes pipeline metrics`() = runTest {
+        val viewModel = PropertyViewModel(application, repository)
+        val propJob = backgroundScope.launch { viewModel.properties.collect {} }
+        val metricJob = backgroundScope.launch { viewModel.pipelineMetrics.collect {} }
+        testScheduler.advanceUntilIdle()
+
+        viewModel.updatePropertyPipelineStatus(sampleProperty1.id, PipelineStatus.RENOVATING)
+        testScheduler.advanceUntilIdle()
+
+        val updated = repository.getPropertyById(sampleProperty1.id)
+        assertNotNull(updated)
+        assertEquals(PipelineStatus.RENOVATING.key, updated?.pipelineStatus)
+
+        val metrics = viewModel.pipelineMetrics.value
+        assertEquals(1, metrics.activeRenovatingCount)
+        propJob.cancel()
+        metricJob.cancel()
+    }
+
+    @Test
+    fun `ViewModel updateRenovationProgress updates progress and actual costs`() = runTest {
+        val viewModel = PropertyViewModel(application, repository)
+        val propJob = backgroundScope.launch { viewModel.properties.collect {} }
+        testScheduler.advanceUntilIdle()
+
+        viewModel.updateRenovationProgress(sampleProperty1.id, 75, 42000.0)
+        testScheduler.advanceUntilIdle()
+
+        val updated = repository.getPropertyById(sampleProperty1.id)
+        assertNotNull(updated)
+        assertEquals(75, updated?.renovationProgressPercent)
+        assertEquals(42000.0, updated?.actualRenovationCost ?: 0.0, 0.001)
+        propJob.cancel()
     }
 }

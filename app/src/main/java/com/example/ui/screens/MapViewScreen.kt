@@ -79,6 +79,26 @@ data class HeatmapRegion(
             else -> EmeraldGreen
         }
 
+    fun getFillColor(metric: com.example.util.D3OverlayMetric, palette: com.example.util.D3Palette, alpha: Float): Color {
+        val norm = when (metric) {
+            com.example.util.D3OverlayMetric.DISTRESS_SEVERITY -> densityScore
+            com.example.util.D3OverlayMetric.DISCOUNT_PERCENT -> (avgDiscountPercent / 50f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.PROPERTY_DENSITY -> (totalDistressedAssets / 30f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.OPPORTUNITY_ALPHA -> (densityScore * 0.5f + (avgDiscountPercent / 100f) * 0.5f).coerceIn(0f, 1f)
+        }
+        return com.example.util.D3ColorScale.interpolate(norm, palette, alpha)
+    }
+
+    fun getStrokeColor(metric: com.example.util.D3OverlayMetric, palette: com.example.util.D3Palette): Color {
+        val norm = when (metric) {
+            com.example.util.D3OverlayMetric.DISTRESS_SEVERITY -> densityScore
+            com.example.util.D3OverlayMetric.DISCOUNT_PERCENT -> (avgDiscountPercent / 50f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.PROPERTY_DENSITY -> (totalDistressedAssets / 30f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.OPPORTUNITY_ALPHA -> (densityScore * 0.5f + (avgDiscountPercent / 100f) * 0.5f).coerceIn(0f, 1f)
+        }
+        return com.example.util.D3ColorScale.interpolate(norm, palette, 1.0f)
+    }
+
     val statusBadgeText: String
         get() = when {
             densityScore >= 0.75f -> "🔥 Densità Critica Aste"
@@ -112,6 +132,26 @@ data class HotspotCluster(
             DensityLevel.HIGH_DENSITY -> AmberGold
             DensityLevel.MODERATE -> CyanAccent
         }
+
+    fun getFillColor(metric: com.example.util.D3OverlayMetric, palette: com.example.util.D3Palette, alpha: Float): Color {
+        val norm = when (metric) {
+            com.example.util.D3OverlayMetric.DISTRESS_SEVERITY -> if (densityLevel == DensityLevel.CRITICAL_HOTSPOT) 0.9f else if (densityLevel == DensityLevel.HIGH_DENSITY) 0.6f else 0.3f
+            com.example.util.D3OverlayMetric.DISCOUNT_PERCENT -> (avgDiscount / 50f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.PROPERTY_DENSITY -> (deals.size / 15f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.OPPORTUNITY_ALPHA -> (avgDiscount / 50f).coerceIn(0f, 1f)
+        }
+        return com.example.util.D3ColorScale.interpolate(norm, palette, alpha)
+    }
+
+    fun getStrokeColor(metric: com.example.util.D3OverlayMetric, palette: com.example.util.D3Palette): Color {
+        val norm = when (metric) {
+            com.example.util.D3OverlayMetric.DISTRESS_SEVERITY -> if (densityLevel == DensityLevel.CRITICAL_HOTSPOT) 0.9f else if (densityLevel == DensityLevel.HIGH_DENSITY) 0.6f else 0.3f
+            com.example.util.D3OverlayMetric.DISCOUNT_PERCENT -> (avgDiscount / 50f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.PROPERTY_DENSITY -> (deals.size / 15f).coerceIn(0f, 1f)
+            com.example.util.D3OverlayMetric.OPPORTUNITY_ALPHA -> (avgDiscount / 50f).coerceIn(0f, 1f)
+        }
+        return com.example.util.D3ColorScale.interpolate(norm, palette, 1.0f)
+    }
 }
 
 enum class DensityLevel {

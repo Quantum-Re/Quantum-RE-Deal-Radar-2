@@ -30,3 +30,18 @@ val TerminalAmber = Color(0xFFFCD34D) // Warning amber in terminal
 val LightBg = Color(0xFFFDF7FF)
 val SurfaceCardLight = Color(0xFFFFFFFF)
 val TextPrimaryLight = Color(0xFF1D1B20)
+
+// Alert & Notification styling tokens
+val EmeraldGainBg = Color(0xFFE8F5E9)
+val EmeraldGainText = Color(0xFF1B5E20)
+val EmeraldGainBorder = Color(0xFFA5D6A7)
+
+val AmberWarningContainer = Color(0xFFFFF3E0)
+val AmberWarningText = Color(0xFFE65100)
+val AmberWarningBorder = Color(0xFFFFCC80)
+
+val BentoBlueContainer = Color(0xFFE1F5FE)
+val BentoBlueOnContainer = Color(0xFF01579B)
+
+val BentoCardBgLight = Color(0xFFF9F7FA)
+

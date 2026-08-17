@@ -3,9 +3,11 @@ package com.example.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
@@ -23,9 +25,12 @@ import com.example.ui.screens.AnalyticsScreen
 import com.example.ui.screens.DistressedPropertiesScreen
 import com.example.ui.screens.InvestorBriefScreen
 import com.example.ui.screens.MapViewScreen
+import com.example.ui.screens.MarketInsightsScreen
+import com.example.ui.screens.MyPropertiesDashboardScreen
 import com.example.ui.screens.ParserSandboxScreen
 import com.example.ui.screens.RadarFeedScreen
 import com.example.ui.screens.RoiCalculatorScreen
+import com.example.ui.screens.ToolsHubScreen
 import com.example.ui.theme.*
 
 import androidx.compose.runtime.CompositionLocalProvider
@@ -34,7 +39,9 @@ import com.example.util.LocalAppStrings
 @Composable
 fun MainScreen(
     viewModel: DealRadarViewModel,
-    distressedViewModel: DistressedPropertyViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+    distressedViewModel: DistressedPropertyViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    propertyViewModel: PropertyViewModel = androidx.lifecycle.viewmodel.compose.viewModel(),
+    marketInsightsViewModel: MarketInsightsViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val strings = remember(uiState.appLanguage) { com.example.util.AppStrings(uiState.appLanguage) }
@@ -62,6 +69,18 @@ fun MainScreen(
         }
     }.collectAsStateWithLifecycle(initialValue = emptyList())
 
+    val isToolsTabSelected = remember(uiState.selectedMainTab) {
+        uiState.selectedMainTab in listOf(
+            MainTab.MARKET_INSIGHTS,
+            MainTab.DISTRESSED,
+            MainTab.INVESTOR_BRIEF,
+            MainTab.PARSER_SANDBOX,
+            MainTab.ANALYTICS
+        )
+    }
+
+    var isViewingSpecificTool by remember { mutableStateOf(false) }
+
     CompositionLocalProvider(LocalAppStrings provides strings) {
         Scaffold(
             bottomBar = {
@@ -75,7 +94,10 @@ fun MainScreen(
                 ) {
                     NavigationBarItem(
                         selected = uiState.selectedMainTab == MainTab.RADAR_FEED,
-                        onClick = { viewModel.setMainTab(MainTab.RADAR_FEED) },
+                        onClick = { 
+                            isViewingSpecificTool = false
+                            viewModel.setMainTab(MainTab.RADAR_FEED) 
+                        },
                         icon = { Icon(Icons.Default.Radar, contentDescription = null) },
                         label = { Text(strings.navRadar, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = NavigationBarItemDefaults.colors(
@@ -89,10 +111,13 @@ fun MainScreen(
                     )
 
                     NavigationBarItem(
-                        selected = uiState.selectedMainTab == MainTab.DISTRESSED,
-                        onClick = { viewModel.setMainTab(MainTab.DISTRESSED) },
-                        icon = { Icon(Icons.Default.HouseSiding, contentDescription = null) },
-                        label = { Text("Distressed", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        selected = uiState.selectedMainTab == MainTab.MY_PROPERTIES,
+                        onClick = { 
+                            isViewingSpecificTool = false
+                            viewModel.setMainTab(MainTab.MY_PROPERTIES) 
+                        },
+                        icon = { Icon(Icons.Default.AccountBalance, contentDescription = null) },
+                        label = { Text(strings.navMyProperties, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = BentoPurpleOnContainer,
                             selectedTextColor = BentoPurpleOnContainer,
@@ -100,12 +125,15 @@ fun MainScreen(
                             unselectedIconColor = TextSecondaryDark,
                             unselectedTextColor = TextSecondaryDark
                         ),
-                        modifier = Modifier.testTag("nav_tab_distressed")
+                        modifier = Modifier.testTag("nav_tab_my_properties")
                     )
 
                     NavigationBarItem(
                         selected = uiState.selectedMainTab == MainTab.MAP_VIEW,
-                        onClick = { viewModel.setMainTab(MainTab.MAP_VIEW) },
+                        onClick = { 
+                            isViewingSpecificTool = false
+                            viewModel.setMainTab(MainTab.MAP_VIEW) 
+                        },
                         icon = { Icon(Icons.Default.Map, contentDescription = null) },
                         label = { Text(strings.navMap, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = NavigationBarItemDefaults.colors(
@@ -119,38 +147,11 @@ fun MainScreen(
                     )
 
                     NavigationBarItem(
-                        selected = uiState.selectedMainTab == MainTab.INVESTOR_BRIEF,
-                        onClick = { viewModel.setMainTab(MainTab.INVESTOR_BRIEF) },
-                        icon = { Icon(Icons.Default.Badge, contentDescription = null) },
-                        label = { Text(strings.navBrief, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = BentoPurpleOnContainer,
-                            selectedTextColor = BentoPurpleOnContainer,
-                            indicatorColor = BentoPurpleHeader,
-                            unselectedIconColor = TextSecondaryDark,
-                            unselectedTextColor = TextSecondaryDark
-                        ),
-                        modifier = Modifier.testTag("nav_tab_brief")
-                    )
-
-                    NavigationBarItem(
-                        selected = uiState.selectedMainTab == MainTab.PARSER_SANDBOX,
-                        onClick = { viewModel.setMainTab(MainTab.PARSER_SANDBOX) },
-                        icon = { Icon(Icons.Default.Terminal, contentDescription = null) },
-                        label = { Text(strings.navSources, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = BentoPurpleOnContainer,
-                            selectedTextColor = BentoPurpleOnContainer,
-                            indicatorColor = BentoPurpleHeader,
-                            unselectedIconColor = TextSecondaryDark,
-                            unselectedTextColor = TextSecondaryDark
-                        ),
-                        modifier = Modifier.testTag("nav_tab_sandbox")
-                    )
-
-                    NavigationBarItem(
                         selected = uiState.selectedMainTab == MainTab.ROI_CALCULATOR,
-                        onClick = { viewModel.setMainTab(MainTab.ROI_CALCULATOR) },
+                        onClick = { 
+                            isViewingSpecificTool = false
+                            viewModel.setMainTab(MainTab.ROI_CALCULATOR) 
+                        },
                         icon = { Icon(Icons.Default.Calculate, contentDescription = null) },
                         label = { Text(strings.navRoi, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = NavigationBarItemDefaults.colors(
@@ -164,10 +165,15 @@ fun MainScreen(
                     )
 
                     NavigationBarItem(
-                        selected = uiState.selectedMainTab == MainTab.ANALYTICS,
-                        onClick = { viewModel.setMainTab(MainTab.ANALYTICS) },
-                        icon = { Icon(Icons.Default.Analytics, contentDescription = null) },
-                        label = { Text(strings.navAnalytics, fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
+                        selected = isToolsTabSelected,
+                        onClick = {
+                            isViewingSpecificTool = false
+                            if (!isToolsTabSelected) {
+                                viewModel.setMainTab(MainTab.INVESTOR_BRIEF)
+                            }
+                        },
+                        icon = { Icon(Icons.Default.Tune, contentDescription = null) },
+                        label = { Text("Strumenti", fontSize = 11.sp, fontWeight = FontWeight.SemiBold) },
                         colors = NavigationBarItemDefaults.colors(
                             selectedIconColor = BentoPurpleOnContainer,
                             selectedTextColor = BentoPurpleOnContainer,
@@ -175,7 +181,7 @@ fun MainScreen(
                             unselectedIconColor = TextSecondaryDark,
                             unselectedTextColor = TextSecondaryDark
                         ),
-                        modifier = Modifier.testTag("nav_tab_analytics")
+                        modifier = Modifier.testTag("nav_tab_tools_hub")
                     )
                 }
             },
@@ -187,8 +193,8 @@ fun MainScreen(
                 .fillMaxSize()
                 .padding(innerPadding)
         ) {
-            when (uiState.selectedMainTab) {
-                MainTab.RADAR_FEED -> {
+            when {
+                uiState.selectedMainTab == MainTab.RADAR_FEED -> {
                     RadarFeedScreen(
                         uiState = uiState,
                         deals = filteredDeals,
@@ -216,12 +222,21 @@ fun MainScreen(
                         onClearRecentSearches = { viewModel.clearRecentSearches() }
                     )
                 }
-                MainTab.DISTRESSED -> {
-                    DistressedPropertiesScreen(
-                        viewModel = distressedViewModel
+                uiState.selectedMainTab == MainTab.MY_PROPERTIES -> {
+                    MyPropertiesDashboardScreen(
+                        viewModel = propertyViewModel,
+                        onNavigateToRoiCalculator = { prop ->
+                            viewModel.updateRoiPrice(prop.price.toInt().toString())
+                            viewModel.updateRoiRenovation(prop.estimatedRenovationCost.toInt().toString())
+                            viewModel.updateRoiResale(prop.effectiveExitValue.toInt().toString())
+                            if (prop.projectedRentalIncome > 0) {
+                                viewModel.updateRoiMonthlyRent(prop.projectedRentalIncome.toInt().toString())
+                            }
+                            viewModel.setMainTab(MainTab.ROI_CALCULATOR)
+                        }
                     )
                 }
-                MainTab.MAP_VIEW -> {
+                uiState.selectedMainTab == MainTab.MAP_VIEW -> {
                     MapViewScreen(
                         uiState = uiState,
                         deals = filteredDeals,
@@ -242,48 +257,7 @@ fun MainScreen(
                         onDeleteMapRegion = { viewModel.deleteOfflineMapRegion(it) }
                     )
                 }
-                MainTab.INVESTOR_BRIEF -> {
-                    InvestorBriefScreen(
-                        profile = investorProfile,
-                        allDeals = allDeals,
-                        isFirebaseConfigured = viewModel.isFirebaseConfigured,
-                        onSaveProfile = { viewModel.saveInvestorProfile(it) },
-                        onSignUp = { email, pass, name, company, tier, capital, onResult ->
-                            viewModel.signUpInvestor(email, pass, name, company, tier, capital, onResult)
-                        },
-                        onSignIn = { email, pass, onResult ->
-                            viewModel.signInInvestor(email, pass, onResult)
-                        },
-                        onSignOut = { viewModel.signOutInvestor() },
-                        onDealClick = { viewModel.setSelectedDealForDetail(it) },
-                        onCalculateRoiClick = {
-                            viewModel.loadDealIntoCalculator(it)
-                            viewModel.setMainTab(MainTab.ROI_CALCULATOR)
-                        },
-                        onLanguageToggle = { viewModel.toggleLanguage() },
-                        onStageChange = { id, stage -> viewModel.updateDealStage(id, stage) },
-                        onBookmarkToggle = { viewModel.toggleBookmark(it) },
-                        onTriggerScan = { viewModel.triggerWorkManagerCriteriaScan() },
-                        onResetNotifiedCache = { viewModel.resetWorkManagerNotifiedCache() }
-                    )
-                }
-                MainTab.PARSER_SANDBOX -> {
-                    ParserSandboxScreen(
-                        uiState = uiState,
-                        sources = allSources,
-                        onSourceSelectForTest = { viewModel.setSelectedSourceForParser(it) },
-                        onRunTestClick = { source, sample, rules -> viewModel.runParserTest(source, sample, rules) },
-                        onUpdateStatusClick = { id, status -> viewModel.updateSourceConfigStatus(id, status) },
-                        onEditRulesClick = {
-                            viewModel.setSelectedSourceForParser(it)
-                            viewModel.setParserEditorOpen(true)
-                        },
-                        onCalibrateClick = { viewModel.calibrateSources() },
-                        onImportDealsClick = { deals -> viewModel.importScrapedDeals(deals) },
-                        onExecuteBatchScrapeClick = { viewModel.executeLiveBatchScrape() }
-                    )
-                }
-                MainTab.ROI_CALCULATOR -> {
+                uiState.selectedMainTab == MainTab.ROI_CALCULATOR -> {
                     RoiCalculatorScreen(
                         state = roiState,
                         onPurchasePriceChange = { viewModel.updateRoiPrice(it) },
@@ -298,12 +272,102 @@ fun MainScreen(
                         onApplyPreset = { down, rate, term -> viewModel.applyRoiPreset(down, rate, term) }
                     )
                 }
-                MainTab.ANALYTICS -> {
-                    AnalyticsScreen(
-                        deals = allDeals,
-                        properties = allSavedProperties,
-                        onOpenMarketTrendDrawer = { viewModel.openMarketTrendDrawer(it) }
+                isToolsTabSelected && !isViewingSpecificTool -> {
+                    ToolsHubScreen(
+                        onSelectTool = { toolTab ->
+                            viewModel.setMainTab(toolTab)
+                            isViewingSpecificTool = true
+                        },
+                        onLanguageToggle = { viewModel.toggleLanguage() }
                     )
+                }
+                uiState.selectedMainTab == MainTab.MARKET_INSIGHTS -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ToolTopBackBar(
+                            title = "Market Insights & Trend",
+                            onBackClick = { isViewingSpecificTool = false }
+                        )
+                        MarketInsightsScreen(
+                            viewModel = marketInsightsViewModel
+                        )
+                    }
+                }
+                uiState.selectedMainTab == MainTab.DISTRESSED -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ToolTopBackBar(
+                            title = "Aste & Immobili Distressed",
+                            onBackClick = { isViewingSpecificTool = false }
+                        )
+                        DistressedPropertiesScreen(
+                            viewModel = distressedViewModel
+                        )
+                    }
+                }
+                uiState.selectedMainTab == MainTab.INVESTOR_BRIEF -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ToolTopBackBar(
+                            title = "Profilo Investitore & Brief",
+                            onBackClick = { isViewingSpecificTool = false }
+                        )
+                        InvestorBriefScreen(
+                            profile = investorProfile,
+                            allDeals = allDeals,
+                            isFirebaseConfigured = viewModel.isFirebaseConfigured,
+                            onSaveProfile = { viewModel.saveInvestorProfile(it) },
+                            onSignUp = { email, pass, name, company, tier, capital, onResult ->
+                                viewModel.signUpInvestor(email, pass, name, company, tier, capital, onResult)
+                            },
+                            onSignIn = { email, pass, onResult ->
+                                viewModel.signInInvestor(email, pass, onResult)
+                            },
+                            onSignOut = { viewModel.signOutInvestor() },
+                            onDealClick = { viewModel.setSelectedDealForDetail(it) },
+                            onCalculateRoiClick = {
+                                viewModel.loadDealIntoCalculator(it)
+                                viewModel.setMainTab(MainTab.ROI_CALCULATOR)
+                            },
+                            onLanguageToggle = { viewModel.toggleLanguage() },
+                            onStageChange = { id, stage -> viewModel.updateDealStage(id, stage) },
+                            onBookmarkToggle = { viewModel.toggleBookmark(it) },
+                            onTriggerScan = { viewModel.triggerWorkManagerCriteriaScan() },
+                            onResetNotifiedCache = { viewModel.resetWorkManagerNotifiedCache() }
+                        )
+                    }
+                }
+                uiState.selectedMainTab == MainTab.PARSER_SANDBOX -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ToolTopBackBar(
+                            title = "Fonti Dati & Scraper",
+                            onBackClick = { isViewingSpecificTool = false }
+                        )
+                        ParserSandboxScreen(
+                            uiState = uiState,
+                            sources = allSources,
+                            onSourceSelectForTest = { viewModel.setSelectedSourceForParser(it) },
+                            onRunTestClick = { source, sample, rules -> viewModel.runParserTest(source, sample, rules) },
+                            onUpdateStatusClick = { id, status -> viewModel.updateSourceConfigStatus(id, status) },
+                            onEditRulesClick = {
+                                viewModel.setSelectedSourceForParser(it)
+                                viewModel.setParserEditorOpen(true)
+                            },
+                            onCalibrateClick = { viewModel.calibrateSources() },
+                            onImportDealsClick = { deals -> viewModel.importScrapedDeals(deals) },
+                            onExecuteBatchScrapeClick = { viewModel.executeLiveBatchScrape() }
+                        )
+                    }
+                }
+                uiState.selectedMainTab == MainTab.ANALYTICS -> {
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        ToolTopBackBar(
+                            title = "Analytics Portafoglio",
+                            onBackClick = { isViewingSpecificTool = false }
+                        )
+                        AnalyticsScreen(
+                            deals = allDeals,
+                            properties = allSavedProperties,
+                            onOpenMarketTrendDrawer = { viewModel.openMarketTrendDrawer(it) }
+                        )
+                    }
                 }
             }
 
@@ -395,5 +459,46 @@ fun MainScreen(
     }
 }
 }
+
+@Composable
+private fun ToolTopBackBar(
+    title: String,
+    onBackClick: () -> Unit
+) {
+    Surface(
+        color = SurfaceCardDark,
+        tonalElevation = 2.dp,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            IconButton(
+                onClick = onBackClick,
+                modifier = Modifier
+                    .size(40.dp)
+                    .testTag("tool_back_button")
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "Torna a Strumenti",
+                    tint = TextPrimaryDark
+                )
+            }
+
+            Text(
+                text = title,
+                fontSize = 17.sp,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimaryDark
+            )
+        }
+    }
+}
+
 
 

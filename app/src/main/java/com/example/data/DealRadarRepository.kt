@@ -1,10 +1,16 @@
 package com.example.data
 
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 
@@ -14,19 +20,67 @@ class DealRadarRepository(
     private val historyDao: PriceHistoryDao,
     private val investorDao: InvestorProfileDao,
     private val propertyDao: PropertyDao? = null,
-    private val distressedPropertyDao: DistressedPropertyDao? = null
+    private val distressedPropertyDao: DistressedPropertyDao? = null,
+    private val externalScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) {
-    val allDeals: Flow<List<PropertyDeal>> = dealDao.getAllDeals().onEach { list ->
-        Log.d("DealRadarRepository", "allDeals flow emitted ${list.size} property deals from Room DB")
+    // Centralized StateFlows providing a single source of truth across the app
+    val allDeals: StateFlow<List<PropertyDeal>> = dealDao.getAllDeals()
+        .onEach { list ->
+            Log.d("DealRadarRepository", "Centralized allDeals emitted ${list.size} property deals from Room DB")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
+
+    val bookmarkedDeals: StateFlow<List<PropertyDeal>> = dealDao.getBookmarkedDeals()
+        .onEach { list ->
+            Log.d("DealRadarRepository", "Centralized bookmarkedDeals emitted ${list.size} items")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
+
+    val recentlyViewedDeals: StateFlow<List<PropertyDeal>> = dealDao.getRecentlyViewedDeals()
+        .onEach { list ->
+            Log.d("DealRadarRepository", "Centralized recentlyViewedDeals emitted ${list.size} items")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
+
+    val allSources: StateFlow<List<ScraperSource>> = sourceDao.getAllSources()
+        .onEach { list ->
+            Log.d("DealRadarRepository", "Centralized allSources emitted ${list.size} sources")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
+
+    val investorProfile: StateFlow<InvestorProfile?> = investorDao.getProfileFlow()
+        .onEach { profile ->
+            Log.d("DealRadarRepository", "Centralized investorProfile updated: ${profile?.companyName ?: "Personal"}")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, null)
+
+    val allSavedProperties: StateFlow<List<Property>> = (propertyDao?.getAllProperties() ?: flowOf(emptyList()))
+        .onEach { list ->
+            Log.d("DealRadarRepository", "Centralized allSavedProperties emitted ${list.size} items")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
+
+    val allDistressedProperties: StateFlow<List<DistressedProperty>> = (distressedPropertyDao?.getAllDistressedProperties() ?: flowOf(emptyList()))
+        .onEach { list ->
+            Log.d("DealRadarRepository", "Centralized allDistressedProperties emitted ${list.size} items")
+        }
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
+
+    suspend fun insertSavedProperty(property: Property): Long = withContext(Dispatchers.IO) {
+        propertyDao?.insertProperty(property) ?: 0L
     }
-    val bookmarkedDeals: Flow<List<PropertyDeal>> = dealDao.getBookmarkedDeals().onEach { list ->
-        Log.d("DealRadarRepository", "bookmarkedDeals flow emitted ${list.size} items")
+
+    suspend fun updateSavedProperty(property: Property) = withContext(Dispatchers.IO) {
+        propertyDao?.updateProperty(property)
     }
-    val recentlyViewedDeals: Flow<List<PropertyDeal>> = dealDao.getRecentlyViewedDeals().onEach { list ->
-        Log.d("DealRadarRepository", "recentlyViewedDeals flow emitted ${list.size} items")
+
+    suspend fun updateSavedPropertyPipelineStatus(propertyId: Long, newStatus: String) = withContext(Dispatchers.IO) {
+        propertyDao?.updatePipelineStatus(propertyId, newStatus)
     }
-    val allSources: Flow<List<ScraperSource>> = sourceDao.getAllSources()
-    val investorProfile: Flow<InvestorProfile?> = investorDao.getProfileFlow()
+
+    suspend fun deleteSavedProperty(property: Property) = withContext(Dispatchers.IO) {
+        propertyDao?.deleteProperty(property)
+    }
 
     suspend fun checkAndSeedDatabase() = withContext(Dispatchers.IO) {
         Log.d("DealRadarRepository", "checkAndSeedDatabase() initialization started")

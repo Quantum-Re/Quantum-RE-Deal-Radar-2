@@ -13,6 +13,8 @@ import com.example.util.BriefMatcher
 
 enum class MainTab {
     RADAR_FEED,
+    MY_PROPERTIES,
+    MARKET_INSIGHTS,
     DISTRESSED,
     MAP_VIEW,
     INVESTOR_BRIEF,
@@ -153,29 +155,17 @@ class DealRadarViewModel(application: Application) : AndroidViewModel(applicatio
     val roiCalculatorState: StateFlow<RoiCalculatorState> = _roiCalculatorState.asStateFlow()
 
     val allDeals: StateFlow<List<PropertyDeal>> = repository.allDeals
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val allSources: StateFlow<List<ScraperSource>> = repository.allSources
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    val allSavedProperties: StateFlow<List<Property>> = database.propertyDao().getAllProperties()
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
+    val allSavedProperties: StateFlow<List<Property>> = repository.allSavedProperties
     val recentlyViewedDeals: StateFlow<List<PropertyDeal>> = repository.recentlyViewedDeals
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val savedDeals: StateFlow<List<PropertyDeal>> = repository.bookmarkedDeals
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
     val investorProfile: StateFlow<InvestorProfile?> = repository.investorProfile
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     private val recentSearchRepository = com.example.data.RecentSearchRepository(
         database.recentSearchDao()
     )
 
     val recentSearches: StateFlow<List<com.example.data.RecentSearchQuery>> = recentSearchRepository.recentSearches
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Filtered deals flow based on search and selected chips
     val filteredDeals: StateFlow<List<PropertyDeal>> = combine(
@@ -886,6 +876,41 @@ class DealRadarViewModel(application: Application) : AndroidViewModel(applicatio
                 selectedComparisonDealIds = newSet,
                 isComparisonSheetOpen = if (newSet.size < 2) false else current.isComparisonSheetOpen
             )
+        }
+    }
+
+    // My Properties Pipeline Actions
+    fun addDealToMyProperties(
+        deal: PropertyDeal,
+        pipelineStatus: PipelineStatus = PipelineStatus.ANALYZED,
+        renovationCost: Double = 0.0,
+        targetResale: Double = 0.0,
+        onSuccess: () -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            val property = Property(
+                title = deal.title,
+                address = deal.location,
+                price = deal.askingPrice,
+                distressStatus = deal.status,
+                propertyType = deal.propertyType,
+                estimatedMarketValue = deal.estimatedMarketValue,
+                surfaceSqm = deal.surfaceSqm,
+                notes = deal.notes.ifBlank { "Analizzato tramite Radar Deals (${deal.sourceName})" },
+                pipelineStatus = pipelineStatus.key,
+                estimatedRenovationCost = renovationCost,
+                targetResalePrice = if (targetResale > 0) targetResale else deal.estimatedMarketValue,
+                latitude = deal.effectiveLatitude,
+                longitude = deal.effectiveLongitude
+            )
+            repository.insertSavedProperty(property)
+            onSuccess()
+        }
+    }
+
+    fun updateSavedPropertyPipelineStatus(propertyId: Long, newStatus: PipelineStatus) {
+        viewModelScope.launch {
+            repository.updateSavedPropertyPipelineStatus(propertyId, newStatus.key)
         }
     }
 }

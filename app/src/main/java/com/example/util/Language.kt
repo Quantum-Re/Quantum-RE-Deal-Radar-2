@@ -18,6 +18,8 @@ class AppStrings(val language: AppLanguage) {
 
     // Navigation
     val navRadar = if (isItalian) "Radar" else "Radar"
+    val navMyProperties = if (isItalian) "I Miei Immobili" else "My Properties"
+    val navInsights = if (isItalian) "Insights" else "Insights"
     val navMap = if (isItalian) "Mappa" else "Map"
     val navBrief = if (isItalian) "Brief" else "Brief"
     val navSources = if (isItalian) "Fonti" else "Sources"

@@ -133,5 +133,58 @@ class PropertyListAndFilterUiTest {
         org.junit.Assert.assertEquals(1, activeDistressed.size)
         org.junit.Assert.assertEquals("Via Roma 45, Milano", activeDistressed[0].address)
     }
+
+    @Test
+    fun testPipelinePropertyCard_RendersStatusAndFinancialsCorrectly() {
+        val testProperty = com.example.data.Property(
+            id = 501L,
+            title = "Bilocale Ristrutturazione Porta Romana",
+            address = "Via Crema 12, Milano",
+            price = 180000.0,
+            distressStatus = "ASTA",
+            propertyType = "Residenziale",
+            estimatedMarketValue = 290000.0,
+            surfaceSqm = 65,
+            notes = "Ottimo frazionamento",
+            pipelineStatus = com.example.data.PipelineStatus.RENOVATING.key,
+            estimatedRenovationCost = 35000.0,
+            actualRenovationCost = 20000.0,
+            targetResalePrice = 295000.0,
+            renovationProgressPercent = 60,
+            contractorNotes = "Impianti idraulici ed elettrici certificati"
+        )
+
+        val euroFormat = java.text.NumberFormat.getCurrencyInstance(java.util.Locale.ITALY).apply {
+            maximumFractionDigits = 0
+        }
+
+        composeTestRule.setContent {
+            QuantumDealRadarTheme {
+                com.example.ui.screens.PipelinePropertyCard(
+                    property = testProperty,
+                    euroFormat = euroFormat,
+                    onUpdateStatusClick = {},
+                    onUpdateProgressClick = {},
+                    onEditFinancialsClick = {},
+                    onCalculateRoiClick = {},
+                    onExportPdfClick = {},
+                    onDeleteClick = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Bilocale Ristrutturazione Porta Romana", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("In Ristrutturazione", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("60%", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithTag("property_pipeline_card_501").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("expand_card_btn_501").assertIsDisplayed()
+        composeTestRule.onRoot().captureRoboImage("src/test/screenshots/pipeline_property_card.png")
+
+        // Test card expansion
+        composeTestRule.onNodeWithTag("expand_card_btn_501").performClick()
+        composeTestRule.onNodeWithTag("edit_financials_btn_501").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("calc_roi_btn_501").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Quadro Economico Dettagliato", substring = true).assertIsDisplayed()
+    }
 }
 

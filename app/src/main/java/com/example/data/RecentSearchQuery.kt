@@ -1,7 +1,13 @@
 package com.example.data
 
 import androidx.room.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 
 @Entity(tableName = "recent_searches")
 data class RecentSearchQuery(
@@ -32,8 +38,12 @@ interface RecentSearchDao {
     suspend fun clearAll()
 }
 
-class RecentSearchRepository(private val dao: RecentSearchDao) {
-    val recentSearches: Flow<List<RecentSearchQuery>> = dao.getRecentSearches()
+class RecentSearchRepository(
+    private val dao: RecentSearchDao,
+    private val externalScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+) {
+    val recentSearches: StateFlow<List<RecentSearchQuery>> = dao.getRecentSearches()
+        .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
 
     suspend fun saveSearchQuery(rawQuery: String) {
         val trimmed = rawQuery.trim()

@@ -37,6 +37,32 @@ abstract class PropertyDao {
         }
     }
 
+    @Query("SELECT * FROM properties WHERE pipelineStatus = :pipelineStatus ORDER BY createdAt DESC")
+    abstract fun getPropertiesByPipelineStatusRaw(pipelineStatus: String): Flow<List<Property>>
+
+    fun getPropertiesByPipelineStatus(pipelineStatus: String): Flow<List<Property>> {
+        Log.d("PropertyDao", "getPropertiesByPipelineStatus(pipelineStatus=$pipelineStatus) query initiated")
+        return getPropertiesByPipelineStatusRaw(pipelineStatus).onEach { list ->
+            Log.d("PropertyDao", "getPropertiesByPipelineStatus(pipelineStatus=$pipelineStatus) emitted ${list.size} items")
+        }
+    }
+
+    @Query("UPDATE properties SET pipelineStatus = :newStatus WHERE id = :id")
+    abstract suspend fun updatePipelineStatusRaw(id: Long, newStatus: String)
+
+    suspend fun updatePipelineStatus(id: Long, newStatus: String) {
+        Log.d("PropertyDao", "updatePipelineStatus(id=$id, newStatus=$newStatus) called")
+        updatePipelineStatusRaw(id, newStatus)
+    }
+
+    @Query("UPDATE properties SET renovationProgressPercent = :progress, actualRenovationCost = :actualCost WHERE id = :id")
+    abstract suspend fun updateRenovationProgressRaw(id: Long, progress: Int, actualCost: Double)
+
+    suspend fun updateRenovationProgress(id: Long, progress: Int, actualCost: Double) {
+        Log.d("PropertyDao", "updateRenovationProgress(id=$id, progress=$progress%, cost=$actualCost) called")
+        updateRenovationProgressRaw(id, progress, actualCost)
+    }
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertPropertyRaw(property: Property): Long
 
@@ -70,6 +96,26 @@ abstract class PropertyDao {
     suspend fun deleteProperty(property: Property) {
         Log.d("PropertyDao", "deleteProperty called for id=${property.id}")
         deletePropertyRaw(property)
+    }
+
+    @Query("DELETE FROM properties WHERE id IN (:ids)")
+    abstract suspend fun deletePropertiesByIdsRaw(ids: List<Long>): Int
+
+    suspend fun deletePropertiesByIds(ids: List<Long>): Int {
+        Log.d("PropertyDao", "deletePropertiesByIds called with ${ids.size} IDs: $ids")
+        val count = deletePropertiesByIdsRaw(ids)
+        Log.d("PropertyDao", "deletePropertiesByIds deleted $count rows")
+        return count
+    }
+
+    @Query("UPDATE properties SET pipelineStatus = :newStatus WHERE id IN (:ids)")
+    abstract suspend fun updatePipelineStatusForMultipleRaw(ids: List<Long>, newStatus: String): Int
+
+    suspend fun updatePipelineStatusForMultiple(ids: List<Long>, newStatus: String): Int {
+        Log.d("PropertyDao", "updatePipelineStatusForMultiple called for ${ids.size} IDs with newStatus=$newStatus")
+        val count = updatePipelineStatusForMultipleRaw(ids, newStatus)
+        Log.d("PropertyDao", "updatePipelineStatusForMultiple updated $count rows")
+        return count
     }
 
     @Query("DELETE FROM properties")

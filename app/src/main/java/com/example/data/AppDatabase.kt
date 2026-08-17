@@ -7,7 +7,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [PropertyDeal::class, Property::class, ScraperSource::class, PriceHistory::class, InvestorProfile::class, MapTileCache::class, MapOfflineRegion::class, DistressedProperty::class, RecentSearchQuery::class],
-    version = 19,
+    version = 20,
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {

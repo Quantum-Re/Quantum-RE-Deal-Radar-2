@@ -1,18 +1,26 @@
 package com.example.data
 
 import android.util.Log
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.withContext
 
 class DistressedPropertyRepository(
-    private val distressedPropertyDao: DistressedPropertyDao
+    private val distressedPropertyDao: DistressedPropertyDao,
+    private val externalScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 ) {
-    val allDistressedProperties: Flow<List<DistressedProperty>> = 
-        distressedPropertyDao.getAllDistressedProperties().onEach { list ->
-            Log.d("DistressedPropertyRepository", "allDistressedProperties flow emitted ${list.size} distressed properties")
-        }
+    val allDistressedProperties: StateFlow<List<DistressedProperty>> = 
+        distressedPropertyDao.getAllDistressedProperties()
+            .onEach { list ->
+                Log.d("DistressedPropertyRepository", "Centralized allDistressedProperties emitted ${list.size} distressed properties")
+            }
+            .stateIn(externalScope, SharingStarted.Eagerly, emptyList())
 
     fun getDistressedPropertiesByLevel(level: String): Flow<List<DistressedProperty>> {
         Log.d("DistressedPropertyRepository", "getDistressedPropertiesByLevel(level=$level) called")

@@ -105,11 +105,6 @@ class DistressedPropertyViewModel @JvmOverloads constructor(
     val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
 
     val allDistressedProperties: StateFlow<List<DistressedProperty>> = repository.allDistressedProperties
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList()
-        )
 
     val filteredDistressedProperties: StateFlow<List<DistressedProperty>> = combine(
         repository.allDistressedProperties,
