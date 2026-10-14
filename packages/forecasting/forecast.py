@@ -1,4 +1,4 @@
-"""Forecast a numeric time series with Google TimesFM 3.0.
+"""Forecast a numeric time series with Google TimesFM 2.5 (Apache-2.0 weights).
 
 Usage:
     python forecast.py INPUT.csv --horizon 12 [--value-col value] [--date-col date] [--out OUT.csv]
@@ -12,22 +12,31 @@ import sys
 
 import numpy as np
 import pandas as pd
-from timesfm3 import ModelConfig, TimesFM3Evaluator
+import timesfm
 
-CHECKPOINT = "google/timesfm-3.0-pytorch"
-
-
-def load_model(device: str | None = None) -> TimesFM3Evaluator:
-    return TimesFM3Evaluator(ModelConfig(checkpoint_path=CHECKPOINT, device=device))
+CHECKPOINT = "google/timesfm-2.5-200m-pytorch"
+MAX_CONTEXT = 1024
+MAX_HORIZON = 256
 
 
-def forecast(model: TimesFM3Evaluator, values: np.ndarray, horizon: int) -> pd.DataFrame:
-    out = next(iter(model.predict_batch(
-        [values.astype(np.float32)], horizon=horizon,
-        return_quantiles=True, use_symmetric_averaging=False,
-    )))
-    q = out.quantiles  # (horizon, 9) -> quantiles 0.1 ... 0.9
-    return pd.DataFrame({"forecast": out.forecast, "p10": q[:, 0], "p90": q[:, 8]}).astype("float64")
+def load_model() -> timesfm.TimesFM_2p5_200M_torch:
+    model = timesfm.TimesFM_2p5_200M_torch.from_pretrained(CHECKPOINT)
+    model.compile(timesfm.ForecastConfig(
+        max_context=MAX_CONTEXT,
+        max_horizon=MAX_HORIZON,
+        normalize_inputs=True,
+        use_continuous_quantile_head=True,
+        force_flip_invariance=True,
+        infer_is_positive=True,
+        fix_quantile_crossing=True,
+    ))
+    return model
+
+
+def forecast(model: timesfm.TimesFM_2p5_200M_torch, values: np.ndarray, horizon: int) -> pd.DataFrame:
+    _, quantiles = model.forecast(horizon=horizon, inputs=[values.astype(np.float32)])
+    q = quantiles[0]  # (horizon, 10): mean, then quantiles 0.1 ... 0.9
+    return pd.DataFrame({"forecast": q[:, 5], "p10": q[:, 1], "p90": q[:, 9]}).astype("float64")
 
 
 def main() -> None:
@@ -36,10 +45,11 @@ def main() -> None:
     p.add_argument("--horizon", type=int, default=12)
     p.add_argument("--value-col", default="value")
     p.add_argument("--date-col", default="date")
-    p.add_argument("--device", default=None, help="cpu, cuda, ... (default: auto)")
     p.add_argument("--out", default=None)
     args = p.parse_args()
 
+    if not 1 <= args.horizon <= MAX_HORIZON:
+        sys.exit(f"--horizon must be between 1 and {MAX_HORIZON}.")
     df = pd.read_csv(args.input)
     if args.value_col not in df.columns:
         sys.exit(f"Column '{args.value_col}' not found. Available: {list(df.columns)}")
@@ -47,7 +57,7 @@ def main() -> None:
     if len(values) < 8:
         sys.exit("Need at least 8 historical points to forecast.")
 
-    result = forecast(load_model(args.device), values, args.horizon)
+    result = forecast(load_model(), values[-MAX_CONTEXT:], args.horizon)
 
     if args.date_col in df.columns:
         dates = pd.to_datetime(df[args.date_col])

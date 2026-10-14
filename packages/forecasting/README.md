@@ -1,11 +1,10 @@
-# Forecasting — Google TimesFM 3.0
+# Forecasting — Google TimesFM 2.5
 
 Previsione zero-shot di serie numeriche (prezzi €/m², volumi aste, ROI, ...) con
-[TimesFM 3.0](https://huggingface.co/google/timesfm-3.0-pytorch) di Google Research.
+[TimesFM 2.5](https://huggingface.co/google/timesfm-2.5-200m-pytorch) (200M parametri) di Google Research.
 
-> ⚠️ **Licenza**: il codice è Apache-2.0, ma i **pesi di TimesFM 3.0** sono sotto
-> *TimesFM Non-Commercial License v1.0* (uso non commerciale / non in produzione).
-> Per uso commerciale: TimesFM 2.5 (pesi Apache-2.0) oppure TimesFM via Google Cloud (BigQuery ML).
+**Licenza**: codice e pesi di TimesFM 2.5 sono Apache-2.0, quindi utilizzabili anche
+commercialmente. (Non usiamo TimesFM 3.0: i suoi pesi sono sotto licenza non commerciale.)
 
 ## Installazione
 
@@ -16,7 +15,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-Al primo avvio i pesi (~1.2 GB) vengono scaricati da Hugging Face e messi in cache.
+Al primo avvio i pesi (~0.9 GB) vengono scaricati da Hugging Face e messi in cache.
 
 ## Uso
 
@@ -25,7 +24,7 @@ Al primo avvio i pesi (~1.2 GB) vengono scaricati da Hugging Face e messi in cac
 ```
 
 Il CSV deve avere una colonna numerica (`value`, configurabile con `--value-col`) ordinata nel tempo
-e, opzionalmente, una colonna `date`. L'output contiene la previsione mediana (`forecast`) e
+e, opzionalmente, una colonna `date`. Vengono usati al massimo gli ultimi 1024 punti; orizzonte massimo 256. L'output contiene la previsione mediana (`forecast`) e
 l'intervallo all'80% (`p10`–`p90`), salvato in `<input>.forecast.csv`.
 
 Da Python:
@@ -33,5 +32,5 @@ Da Python:
 ```python
 from forecast import load_model, forecast
 model = load_model()
-df = forecast(model, values, horizon=12)
+df = forecast(model, values, horizon=12)  # colonne: forecast, p10, p90
 ```
